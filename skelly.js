@@ -1,8 +1,8 @@
 var regl = require("regl")({
   extensions: ['OES_element_index_uint', 'OES_standard_derivatives']
 });
-var mesh = require("./skullmeshbig.json");
-// var mesh = require('mesh-fixer')(mesh.cells, mesh.positions)
+// var mesh = require("./skullmeshbig.json");
+var mesh = require("./tristar.json");
 
 var mat4 = require("gl-mat4");
 var normals = require("angle-normals");
@@ -75,7 +75,7 @@ float pNoise(vec2 p, int res){
 vec3 normal = normalize( cross( dFdx( fragPosition.xyz ), dFdy( fragPosition.xyz ) ) );
 
 
-    vec3 light = vec3(0, 0, 0);
+    vec3 light = vec3(0.05);
     for (int i = 0; i < 4; ++i) {
       vec3 lightDir = normalize(lights[i].position - fragPosition);
       float diffuse = max(0.0, dot(lightDir, normal));
@@ -87,7 +87,7 @@ vec3 normal = normalize( cross( dFdx( fragPosition.xyz ), dFdy( fragPosition.xyz
     if(length(light)< noise(gl_FragCoord.xy,900.0)*1.3){
       color = vec3(0.0);
     }
-    // color = light;
+    color = light;
     gl_FragColor = vec4(color, 1);
   }`,
     vert: glsl`
@@ -102,7 +102,8 @@ vec3 normal = normalize( cross( dFdx( fragPosition.xyz ), dFdy( fragPosition.xyz
       void main() {
         fragNormal = normal;
         fragPosition = position;
-        vec4 computed = projection * view *model* vec4(position + 0.5 *normal*cos(t*4.0 + position.y*5.)*sin(t*4.0 + position.x*5.), 1) ;
+        // vec4 computed = projection * view *model* vec4(position + 0.5 *normal*cos(t*4.0 + position.y*5.)*sin(t*4.0 + position.x*5.), 1) ;
+        vec4 computed = projection * view *model* vec4(position, 1) ;
         vUv = computed.xy* 0.5 + 0.5;
         gl_Position = computed;
       }`,
@@ -126,10 +127,10 @@ vec3 normal = normalize( cross( dFdx( fragPosition.xyz ), dFdy( fragPosition.xyz
           viewportWidth / viewportHeight,
           0.01,
           1000),
-      'lights[0].color': [1, 0, 0],
-      'lights[1].color': [0, 1, 0],
-      'lights[2].color': [0, 0, 1],
-      'lights[3].color': [1, 1, 0],
+      'lights[0].color': [1, 0.4, 0.4],
+      'lights[1].color': [0.4, 1, 0.4],
+      'lights[2].color': [0.4, 0.4, 1],
+      'lights[3].color': [1, 1, 0.4],
       'lights[0].position': ({ tick }) => {
         const t = 0.1 * tick
         return [
