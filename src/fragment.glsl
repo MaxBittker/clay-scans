@@ -19,7 +19,8 @@ uniform float t;
 uniform vec2 resolution;
 
 uniform Light lights[4];
-varying vec3 fragNormal, fragPosition;
+varying vec3 fragNormal, fragPosition, fragColor;
+
 varying vec2 vUv;
 #define PI 3.1415926538
 
@@ -39,23 +40,22 @@ vec3 getColor() {
       normalize(cross(dFdx(fragPosition.xyz), dFdy(fragPosition.xyz)));
   vec3 viewDir = normalize(-fragPosition);
 
-  vec3 light = vec3(0.05);
+  vec3 light = vec3(0.);
   for (int i = 0; i < 4; ++i) {
-    vec3 lightDir =
-        normalize((lights[i].position - vec3(0.0, 30.0, 0.)) - fragPosition);
-    //   float diffuse = max(0.0, dot(lightDir, normal));
-    //   light += diffuse * lights[i].color;
+    vec3 lightDir = normalize((lights[i].position + vec3(580.0, 580.0, -500)) -
+                              fragPosition);
     light += lighting(normal, lightDir, viewDir, lights[i].color);
   }
   vec3 hsvLight = rgb2hsv(light);
-  vec3 color = hsv2rgb(vec3(floor(hsvLight.r * 4.0) / 16.0, 0.2, 0.5));
+  vec3 color = light * hsv2rgb(vec3(fragColor.r, 0.3, 0.7));
+  //  hsv2rgb(vec3(floor(hsvLight.r * 4.0) / 16.0, 0.2, 0.5));
   //  + floor(light*3.0)/5.0;
 
-  if (length(light) <
+  if (length(light * color) <
       ((noise(vec3(gl_FragCoord.xy / 1.0, t * 0.001)) * 0.5) + 0.5) * 1.3) {
     color = vec3(0.0);
   }
-  // color = light;
+  // color = light * fragColor;
   return color;
 }
 

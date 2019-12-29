@@ -1,11 +1,17 @@
-var mesh = require("./assets/skullmeshbig.json");
-var mesh = require("./assets/tristar.json");
+// var mesh = require("./assets/skullmesh.json");
+var mesh = require("./assets/mobius.json");
+// var mesh = require("./assets/tristar.json");
+// var mesh = require("./assets/tri_small.json");
 
 const { setupOverlay } = require("regl-shader-error-overlay");
 setupOverlay();
 
 var regl = require("regl")({
-  extensions: ["OES_element_index_uint", "OES_standard_derivatives"]
+  extensions: [
+    "OES_element_index_uint",
+    "OES_standard_derivatives",
+    "angle_instanced_arrays"
+  ]
 });
 
 let shaders = require("./src/pack.shader.js");
@@ -24,19 +30,68 @@ var mat4 = require("gl-mat4");
 var normals = require("angle-normals");
 var camera = require("regl-camera")(regl, {
   center: [0, -30, 0],
-  distance: 120
+  distance: 120,
+  far: 2000
 });
 
-var lightSpeed = 0.1;
+var N = 3; // N bunnies on the width, N bunnies on the height.
+
+var angle = [];
+for (var i = 0; i < N * N; i++) {
+  // generate random initial angle.
+  angle[i] = Math.random() * (2 * Math.PI);
+}
+
+// This buffer stores the angles of all
+// the instanced bunnies.
+const angleBuffer = regl.buffer({
+  length: angle.length * 4,
+  type: "float",
+  usage: "dynamic"
+});
+
+var lightSpeed = 0.01;
 function clay(regl) {
   return regl({
     frag: () => shaders.fragment,
     vert: () => shaders.vertex,
     attributes: {
       position: mesh.positions,
-      normal: normals(mesh.cells, mesh.positions)
+      normal: normals(mesh.cells, mesh.positions),
+      offset: {
+        buffer: regl.buffer(
+          Array(N * N)
+            .fill()
+            .map((_, i) => {
+              var hi = (N * N) / 2;
+              var ni = i - hi;
+              var x = (-1 + (2 * Math.floor(i / N)) / N) * 150;
+              var z = (-1 + (2 * (i % N)) / N) * 150;
+              return [0, ni * 40, 0];
+            })
+        ),
+        divisor: 1
+      },
+      color: {
+        buffer: regl.buffer(
+          Array(N * N)
+            .fill()
+            .map((_, i) => {
+              var x = Math.floor(i / N) / (N - 1);
+              var z = (i % N) / (N - 1);
+              return [Math.random(), Math.random(), Math.random()];
+            })
+        ),
+        divisor: 1
+      },
+      angle: {
+        buffer: angleBuffer,
+        divisor: 1
+      }
     },
     elements: mesh.cells,
+    instances: N * N,
+
     uniforms: {
       model: function(context, props) {
         var rmat = [];
@@ -107,6 +162,13 @@ regl.frame(function() {
   regl.clear({
     color: [0.7, 0.8, 0.8, 1]
   });
+
+  // rotate the bunnies every frame.
+  for (var i = 0; i < N * N; i++) {
+    angle[i] += 0.01;
+  }
+  angleBuffer.subdata(angle);
+
   camera(function() {
     draw.clay();
   });
