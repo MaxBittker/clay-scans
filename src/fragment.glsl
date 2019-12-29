@@ -28,8 +28,8 @@ float rand(vec2 c) {
 }
 
 vec3 lighting(vec3 nor, vec3 lightDir, vec3 viewDir, vec3 col) {
-  vec3 dif = col * orenn(lightDir, viewDir, nor, 0.15, 1.0);
-  vec3 spc = col * gauss(lightDir, viewDir, nor, 0.15) * 0.00005;
+  vec3 dif = col * orenn(lightDir, viewDir, nor, 0.5, 1.0);
+  vec3 spc = col * gauss(lightDir, viewDir, nor, 0.15);
 
   return dif + spc;
 }

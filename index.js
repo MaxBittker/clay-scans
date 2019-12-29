@@ -1,5 +1,5 @@
-// var mesh = require("./assets/skullmeshbig.json");
-var mesh = require("./assets/model.json");
+var mesh = require("./assets/skullmeshbig.json");
+var mesh = require("./assets/tristar.json");
 
 const { setupOverlay } = require("regl-shader-error-overlay");
 setupOverlay();
@@ -41,7 +41,7 @@ function clay(regl) {
       model: function(context, props) {
         var rmat = [];
         var rmati = mat4.identity(rmat);
-        var theta = context.time;
+        var theta = context.time * 0.0;
         mat4.rotateY(rmati, rmati, theta);
         return rmat;
       },

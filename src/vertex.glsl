@@ -7,11 +7,14 @@ varying vec3 fragNormal, fragPosition;
 varying vec2 vUv;
 
 void main() {
+  vec3 pos = position;
+  pos += vec3(sin(t * 4.0 + (pos.x * 0.1)) * 2.5);
+
   fragNormal = normal;
-  fragPosition = position;
-  // vec4 computed = projection * view *model* vec4(position + 0.5
-  // *normal*cos(t*4.0 + position.y*5.)*sin(t*4.0 + position.x*5.), 1) ;
-  vec4 computed = projection * view * model * vec4(position, 1);
+  fragPosition = pos;
+  // vec4 computed = projection * view *model* vec4(pos + 0.5
+  // *normal*cos(t*4.0 + pos.y*5.)*sin(t*4.0 + pos.x*5.), 1) ;
+  vec4 computed = projection * view * model * vec4(pos, 1);
   vUv = computed.xy * 0.5 + 0.5;
   gl_Position = computed;
 }
