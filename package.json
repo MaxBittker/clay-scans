@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "./node_modules/.bin/shader-reload-cli index.js:bundle.js --dir dist/ --cors",
+    "start": "./node_modules/.bin/shader-reload-cli index.js:bundle.js --dir assets/ --cors",
     "build": "./node_modules/.bin/browserify -t glslify -g uglifyify index.js -o docs/bundle.js"
   },
   "author": "",
@@ -34,6 +34,7 @@
     "regl": "^1.3.0",
     "regl-camera": "maxbittker/regl-camera",
     "regl-shader-error-overlay": "1.1.0",
+    "resl": "^1.0.3",
     "uglifyify": "^4.0.5",
     "webrtc-adapter": "^6.1.3"
   },
