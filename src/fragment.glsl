@@ -55,7 +55,7 @@ vec3 getColor() {
       ((noise(vec3(gl_FragCoord.xy / 1.0, t * 0.001)) * 0.5) + 0.5) * 1.3) {
     color = vec3(0.0);
   }
-  // color = light * fragColor;
+  color = light * fragColor;
   return color;
 }
 

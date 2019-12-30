@@ -1,5 +1,6 @@
 // var mesh = require("./assets/skullmesh.json");
-var mesh = require("./assets/mobius.json");
+var mesh = require("./assets/mobius_small.json");
+// var mesh = require("./assets/skelly.json");
 // var mesh = require("./assets/tristar.json");
 // var mesh = require("./assets/tri_small.json");
 
@@ -14,9 +15,7 @@ var regl = require("regl")({
   ]
 });
 
-let shaders = require("./src/pack.shader.js");
-let vert = shaders.vertex;
-let frag = shaders.fragment;
+let { shaders, postShaders } = require("./src/pack.shader.js");
 
 shaders.on("change", () => {
   console.log("update");
@@ -31,10 +30,21 @@ var normals = require("angle-normals");
 var camera = require("regl-camera")(regl, {
   center: [0, -30, 0],
   distance: 120,
-  far: 2000
+  far: 40000,
+  near: -200
 });
 
-var N = 3; // N bunnies on the width, N bunnies on the height.
+// create fbo. We set the size in `regl.frame`
+const fbo = regl.framebuffer({
+  color: regl.texture({
+    width: 1,
+    height: 1,
+    wrap: "clamp"
+  }),
+  depth: true
+});
+
+var N = 6; // N bunnies on the width, N bunnies on the height.
 
 var angle = [];
 for (var i = 0; i < N * N; i++) {
@@ -51,125 +61,165 @@ const angleBuffer = regl.buffer({
 });
 
 var lightSpeed = 0.01;
-function clay(regl) {
-  return regl({
-    frag: () => shaders.fragment,
-    vert: () => shaders.vertex,
-    attributes: {
-      position: mesh.positions,
-      normal: normals(mesh.cells, mesh.positions),
-      offset: {
-        buffer: regl.buffer(
-          Array(N * N)
-            .fill()
-            .map((_, i) => {
-              var hi = (N * N) / 2;
-              var ni = i - hi;
-              var x = (-1 + (2 * Math.floor(i / N)) / N) * 150;
-              var z = (-1 + (2 * (i % N)) / N) * 150;
-              return [0, ni * 40, 0];
-            })
-        ),
-        divisor: 1
-      },
-      color: {
-        buffer: regl.buffer(
-          Array(N * N)
-            .fill()
-            .map((_, i) => {
-              var x = Math.floor(i / N) / (N - 1);
-              var z = (i % N) / (N - 1);
-              return [Math.random(), Math.random(), Math.random()];
-            })
-        ),
-        divisor: 1
-      },
-      angle: {
-        buffer: angleBuffer,
-        divisor: 1
-      }
+
+var drawClay = regl({
+  frag: () => shaders.fragment,
+  vert: () => shaders.vertex,
+  attributes: {
+    position: mesh.positions,
+    normal: normals(mesh.cells, mesh.positions),
+    offset: {
+      buffer: regl.buffer(
+        Array(N * N)
+          .fill()
+          .map((_, i) => {
+            var hi = (N * N) / 2;
+            var ni = i - hi;
+            var x = (-1 + (2 * Math.floor(i / N)) / N) * 150;
+            var z = (-1 + (2 * (i % N)) / N) * 150;
+            return [0, ni * 1, 0];
+          })
+      ),
+      divisor: 1
     },
-    elements: mesh.cells,
-    instances: N * N,
-
-    uniforms: {
-      model: function(context, props) {
-        var rmat = [];
-        var rmati = mat4.identity(rmat);
-        var theta = context.time * 0.0;
-        mat4.rotateY(rmati, rmati, theta);
-        return rmat;
-      },
-      t: ({ time }) => time,
-      projection: ({ viewportWidth, viewportHeight }) =>
-        mat4.perspective(
-          [],
-          Math.PI / 4,
-          viewportWidth / viewportHeight,
-          0.01,
-          1000
-        ),
-      resolution: ({ viewportWidth, viewportHeight }) => [
-        viewportWidth,
-        viewportHeight
-      ],
-      "lights[0].color": [1, 0.4, 0.4],
-      "lights[1].color": [0.4, 1, 0.4],
-      "lights[2].color": [0.4, 0.4, 1],
-      "lights[3].color": [1, 1, 0.4],
-      "lights[0].position": ({ tick }) => {
-        const t = lightSpeed * tick;
-        return [
-          40 * Math.cos(0.09 * t),
-          40 * Math.sin(0.09 * (2 * t)),
-          40 * Math.cos(0.09 * (3 * t))
-        ];
-      },
-      "lights[1].position": ({ tick }) => {
-        const t = lightSpeed * tick;
-        return [
-          40 * Math.cos(0.05 * (5 * t + 1)),
-          40 * Math.sin(0.05 * (4 * t)),
-          40 * Math.cos(0.05 * (0.1 * t))
-        ];
-      },
-      "lights[2].position": ({ tick }) => {
-        const t = lightSpeed * tick;
-        return [
-          40 * Math.cos(0.05 * (9 * t)),
-          40 * Math.sin(0.05 * (0.25 * t)),
-          40 * Math.cos(0.05 * (4 * t))
-        ];
-      },
-      "lights[3].position": ({ tick }) => {
-        const t = lightSpeed * tick;
-        return [
-          40 * Math.cos(0.1 * (0.3 * t)),
-          40 * Math.sin(0.1 * (2.1 * t)),
-          40 * Math.cos(0.1 * (1.3 * t))
-        ];
-      }
+    color: {
+      buffer: regl.buffer(
+        Array(N * N)
+          .fill()
+          .map((_, i) => {
+            var x = Math.floor(i / N) / (N - 1);
+            var z = (i % N) / (N - 1);
+            return [Math.random(), Math.random(), Math.random()];
+          })
+      ),
+      divisor: 1
     },
-    primitive: "triangles"
-  });
-}
+    angle: {
+      buffer: angleBuffer,
+      divisor: 1
+    }
+  },
+  elements: mesh.cells,
+  instances: N * N,
 
-var draw = {
-  clay: clay(regl)
-};
+  uniforms: {
+    model: function(context, props) {
+      var rmat = [];
+      var rmati = mat4.identity(rmat);
+      var theta = context.time * 0.0;
+      mat4.rotateY(rmati, rmati, theta);
+      return rmat;
+    },
+    t: ({ time }) => time,
+    projection: ({ viewportWidth, viewportHeight }) =>
+      mat4.perspective(
+        [],
+        Math.PI / 4,
+        viewportWidth / viewportHeight,
+        0.01,
+        1000
+      ),
+    resolution: ({ viewportWidth, viewportHeight }) => [
+      viewportWidth,
+      viewportHeight
+    ],
+    "lights[0].color": [1, 0.4, 0.4],
+    "lights[1].color": [0.4, 1, 0.4],
+    "lights[2].color": [0.4, 0.4, 1],
+    "lights[3].color": [1, 1, 0.4],
+    "lights[0].position": ({ tick }) => {
+      const t = lightSpeed * tick;
+      return [
+        40 * Math.cos(0.09 * t),
+        40 * Math.sin(0.09 * (2 * t)),
+        40 * Math.cos(0.09 * (3 * t))
+      ];
+    },
+    "lights[1].position": ({ tick }) => {
+      const t = lightSpeed * tick;
+      return [
+        40 * Math.cos(0.05 * (5 * t + 1)),
+        40 * Math.sin(0.05 * (4 * t)),
+        40 * Math.cos(0.05 * (0.1 * t))
+      ];
+    },
+    "lights[2].position": ({ tick }) => {
+      const t = lightSpeed * tick;
+      return [
+        40 * Math.cos(0.05 * (9 * t)),
+        40 * Math.sin(0.05 * (0.25 * t)),
+        40 * Math.cos(0.05 * (4 * t))
+      ];
+    },
+    "lights[3].position": ({ tick }) => {
+      const t = lightSpeed * tick;
+      return [
+        40 * Math.cos(0.1 * (0.3 * t)),
+        40 * Math.sin(0.1 * (2.1 * t)),
+        40 * Math.cos(0.1 * (1.3 * t))
+      ];
+    }
+  },
+  framebuffer: fbo,
+  primitive: "triangles"
+});
+// console.log(shaders);
+// debugger;
+const drawFboBlurred = regl({
+  frag: () => postShaders.fragment,
+  vert: () => postShaders.vertex,
+  attributes: {
+    position: [-4, -4, 4, -4, 0, 4]
+  },
+  uniforms: {
+    tex: ({ count }) => fbo,
+    wRcp: ({ viewportWidth }) => 1.0 / viewportWidth,
+    hRcp: ({ viewportHeight }) => 1.0 / viewportHeight
+  },
+  depth: { enable: false },
+  count: 3
+});
 
-regl.frame(function() {
-  regl.clear({
-    color: [0.7, 0.8, 0.8, 1]
-  });
+// var draw = {
+//   clay: clay(regl)
+// };
+
+regl.frame(function({ viewportWidth, viewportHeight }) {
+  fbo.resize(viewportWidth, viewportHeight);
+
+  // regl.clear({
+  //   color: [0.7, 0.8, 0.8, 1]
+  // });
 
   // rotate the bunnies every frame.
   for (var i = 0; i < N * N; i++) {
     angle[i] += 0.01;
   }
   angleBuffer.subdata(angle);
-
+  // regl.clear({
+  //   color: [0.7, 0.8, 0.8, 1]
+  // });
   camera(function() {
-    draw.clay();
+    // console.log(fbo);
+    // debugger;
+
+    fbo.use(() => {
+      regl.clear({
+        color: [0.7, 0.8, 0.8, 1],
+        depth: 1
+      });
+      drawClay();
+    });
+    drawFboBlurred();
+
+    // fbo.resize(viewportWidth, viewportHeight + Math.floor(Math.random() * 3));
+
+    // regl.clear({
+    //   color: [0.7, 0.8, 0.8, 1]
+    // });
+
+    // regl.clear({
+    //   color: [0, 0, 0, 255]
+    // });
   });
 });
