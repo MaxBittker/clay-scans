@@ -30,24 +30,25 @@ float rand(vec2 c) {
 
 vec3 lighting(vec3 nor, vec3 lightDir, vec3 viewDir, vec3 col) {
   vec3 dif = col * orenn(lightDir, viewDir, nor, 0.5, 1.0);
-  vec3 spc = col * gauss(lightDir, viewDir, nor, 0.15);
+  vec3 spc = col * gauss(lightDir, viewDir, nor, 0.05);
 
   return dif + spc;
 }
 
 vec3 getColor() {
-  vec3 normal =
-      normalize(cross(dFdx(fragPosition.xyz), dFdy(fragPosition.xyz)));
+  vec3 normal = fragNormal;
+  // normalize(cross(dFdx(fragPosition.xyz), dFdy(fragPosition.xyz)));
   vec3 viewDir = normalize(-fragPosition);
 
-  vec3 light = vec3(0.);
+  vec3 light = vec3(0.2);
   for (int i = 0; i < 4; ++i) {
     vec3 lightDir = normalize((lights[i].position + vec3(580.0, 580.0, -500)) -
                               fragPosition);
     light += lighting(normal, lightDir, viewDir, lights[i].color);
   }
-  vec3 hsvLight = rgb2hsv(light);
-  vec3 color = light * hsv2rgb(vec3(fragColor.r, 0.3, 0.7));
+  // vec3 hsvLight = rgb2hsv(light);
+  vec3 pastel = hsv2rgb(vec3(fragColor.r, 0.3, 0.7));
+  vec3 color = light * pastel;
   //  hsv2rgb(vec3(floor(hsvLight.r * 4.0) / 16.0, 0.2, 0.5));
   //  + floor(light*3.0)/5.0;
 
@@ -55,7 +56,7 @@ vec3 getColor() {
       ((noise(vec3(gl_FragCoord.xy / 1.0, t * 0.001)) * 0.5) + 0.5) * 1.3) {
     color = vec3(0.0);
   }
-  color = light * fragColor;
+  // color = pastel * ;
   return color;
 }
 

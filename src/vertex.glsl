@@ -25,7 +25,7 @@ void main() {
   // pos = pos * rotateZ(angle);
 
   // pos += vec3(sin(t * 4.0 + (pos.x * 0.5)) * 0.5);
-  // pos.x += fbm3d(vec3(position) * 0.01, 5) * 3.1;
+  // pos.x += fbm3d(vec3(position) * 0.01, 5) * 9.1;
   // pos.y += fbm3d(vec3(position.yxz) * 0.01, 5) * 3.1;
   // pos.z += fbm3d(vec3(position.zxy) * 0.01, 5) * 3.1;
   pos = pos * rotateX(80. * DEG_TO_RAD);

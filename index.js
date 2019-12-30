@@ -1,4 +1,5 @@
 // var mesh = require("./assets/skullmesh.json");
+// var mesh = require("./assets/skullmeshbig.json");
 var mesh = require("./assets/mobius_small.json");
 // var mesh = require("./assets/skelly.json");
 // var mesh = require("./assets/tristar.json");
@@ -15,9 +16,17 @@ var regl = require("regl")({
   ]
 });
 
-let { shaders, postShaders } = require("./src/pack.shader.js");
+let shaders = require("./src/pack.shader.js");
+let postShaders = require("./src/post.shader.js");
 
 shaders.on("change", () => {
+  console.log("update");
+  vert = shaders.vertex;
+  frag = shaders.fragment;
+  let overlay = document.getElementById("regl-overlay-error");
+  overlay && overlay.parentNode.removeChild(overlay);
+});
+postShaders.on("change", () => {
   console.log("update");
   vert = shaders.vertex;
   frag = shaders.fragment;
@@ -44,7 +53,7 @@ const fbo = regl.framebuffer({
   depth: true
 });
 
-var N = 6; // N bunnies on the width, N bunnies on the height.
+var N = 3; // N bunnies on the width, N bunnies on the height.
 
 var angle = [];
 for (var i = 0; i < N * N; i++) {
@@ -77,7 +86,8 @@ var drawClay = regl({
             var ni = i - hi;
             var x = (-1 + (2 * Math.floor(i / N)) / N) * 150;
             var z = (-1 + (2 * (i % N)) / N) * 150;
-            return [0, ni * 1, 0];
+            // return [x, ni * 0, z];
+            return [0, ni * 0, 0];
           })
       ),
       divisor: 1
@@ -129,6 +139,8 @@ var drawClay = regl({
     "lights[3].color": [1, 1, 0.4],
     "lights[0].position": ({ tick }) => {
       const t = lightSpeed * tick;
+      console.log(camera);
+      // debugger;
       return [
         40 * Math.cos(0.09 * t),
         40 * Math.sin(0.09 * (2 * t)),
@@ -173,6 +185,10 @@ const drawFboBlurred = regl({
   },
   uniforms: {
     tex: ({ count }) => fbo,
+    resolution: ({ viewportWidth, viewportHeight }) => [
+      viewportWidth,
+      viewportHeight
+    ],
     wRcp: ({ viewportWidth }) => 1.0 / viewportWidth,
     hRcp: ({ viewportHeight }) => 1.0 / viewportHeight
   },
@@ -199,27 +215,18 @@ regl.frame(function({ viewportWidth, viewportHeight }) {
   // regl.clear({
   //   color: [0.7, 0.8, 0.8, 1]
   // });
-  camera(function() {
-    // console.log(fbo);
+  camera(function(c) {
+    console.log(c);
     // debugger;
 
     fbo.use(() => {
       regl.clear({
         color: [0.7, 0.8, 0.8, 1],
+        // color: [1, 1, 1, 1],
         depth: 1
       });
       drawClay();
     });
     drawFboBlurred();
-
-    // fbo.resize(viewportWidth, viewportHeight + Math.floor(Math.random() * 3));
-
-    // regl.clear({
-    //   color: [0.7, 0.8, 0.8, 1]
-    // });
-
-    // regl.clear({
-    //   color: [0, 0, 0, 255]
-    // });
   });
 });
