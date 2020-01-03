@@ -5,32 +5,32 @@ uniform sampler2D tex;
 uniform float wRcp, hRcp;
 uniform vec2 resolution;
 
-#define R int(1)
+#define R int(0)
 
 // clang-format off
 // #pragma glslify: dither = require(glsl-dither)
-#pragma glslify: dither = require(glsl-dither/8x8)
-// #pragma glslify: dither = require(glsl-dither/4x4)
+// #pragma glslify: dither = require(glsl-dither/8x8)
+#pragma glslify: dither = require(glsl-dither/4x4)
 // #pragma glslify: dither = require(glsl-dither/2x2)
 // clang-format on
 
-// void main() {
-//   vec4 color = texture2D(tex, uv);
-
-//   gl_FragColor = dither(gl_FragCoord.xy, color);
-// }
-
 void main() {
-  float W = float((1 + 2 * R) * (1 + 2 * R));
-  vec3 avg = vec3(0.0);
-  for (int x = -R; x <= +R; x++) {
-    for (int y = -R; y <= +R; y++) {
-      avg += (1.0 / W) *
-             texture2D(tex, uv + vec2(float(x) * wRcp, float(y) * hRcp)).xyz;
-    }
-  }
-  gl_FragColor = dither(gl_FragCoord.xy, vec4(avg, 1.0));
+  vec4 color = texture2D(tex, uv);
+
+  gl_FragColor = dither(gl_FragCoord.xy, color);
 }
+
+// void main() {
+//   float W = float((1 + 2 * R) * (1 + 2 * R));
+//   vec3 avg = vec3(0.0);
+//   for (int x = -R; x <= +R; x++) {
+//     for (int y = -R; y <= +R; y++) {
+//       avg += (1.0 / W) *
+//              texture2D(tex, uv + vec2(float(x) * wRcp, float(y) * hRcp)).xyz;
+//     }
+//   }
+//   gl_FragColor = dither(gl_FragCoord.xy, vec4(avg, 1.0));
+// }
 /*
 
 const int lookupSize = 64;

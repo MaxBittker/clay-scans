@@ -1,10 +1,3 @@
-// var mesh = require("./assets/skullmesh.json");
-// var mesh = require("./assets/skullmeshbig.json");
-// var mesh = require("./assets/mobius_small.json");
-// var mesh = require("./assets/skelly.json");
-// var mesh = require("./assets/tristar.json");
-// var mesh = require("./assets/tri_small.json");
-
 const { setupOverlay } = require("regl-shader-error-overlay");
 setupOverlay();
 
@@ -53,7 +46,7 @@ const fbo = regl.framebuffer({
   depth: true
 });
 
-var N = 3; // N bunnies on the width, N bunnies on the height.
+var N = 1; // N bunnies on the width, N bunnies on the height.
 
 var angle = [];
 for (var i = 0; i < N * N; i++) {
@@ -74,127 +67,139 @@ require("resl")({
   manifest: {
     json_data: {
       type: "text",
-      src: "mobius_small.json",
+      src: "two_big.json",
       parser: JSON.parse // Here we call JSON.parse as soon as the asset has
       // finished loading
+    },
+    json_data2: {
+      type: "text",
+      src: "zero_big.json",
+      parser: JSON.parse // Here we call JSON.parse as soon as the asset has
     }
   },
   // As assets are preloaded the progress callback gets fired
   onProgress: (progress, message) => {
-    document.body.innerHTML =
-      "<b>" + progress * 100 + "% loaded</b>: " + message;
+    // document.body.innerHTML =
+    //   "<b>" + progress * 100 + "% loaded</b>: " + message;
   },
 
   onError: err => {
     console.error(err);
   },
   onDone: assets => {
-    var mesh = assets.json_data;
+    var mesh1 = assets.json_data;
+    var mesh2 = assets.json_data2;
+    var drawMesh = (mesh, index) => {
+      return regl({
+        frag: () => shaders.fragment,
+        vert: () => shaders.vertex,
+        attributes: {
+          position: mesh.positions,
+          normal: normals(mesh.cells, mesh.positions),
+          offset: {
+            buffer: regl.buffer(
+              Array(N * N)
+                .fill()
+                .map((_, i) => {
+                  var hi = (N * N) / 2;
+                  var ni = i - hi;
+                  var x = (-1 + (2 * Math.floor(i / N)) / N) * 150;
+                  var z = (-1 + (2 * (i % N)) / N) * 150;
+                  // return [x, ni * 0, z];
+                  return [(index - 1.5) * 80.0, 0, 0];
+                })
+            ),
+            divisor: 1
+          },
+          color: {
+            buffer: regl.buffer(
+              Array(N * N)
+                .fill()
+                .map((_, i) => {
+                  var x = Math.floor(i / N) / (N - 1);
+                  var z = (i % N) / (N - 1);
+                  return [Math.random(), Math.random(), Math.random()];
+                })
+            ),
+            divisor: 1
+          },
+          angle: {
+            buffer: angleBuffer,
+            divisor: 1
+          }
+        },
+        elements: mesh.cells,
+        instances: N * N,
 
-    var drawClay = regl({
-      frag: () => shaders.fragment,
-      vert: () => shaders.vertex,
-      attributes: {
-        position: mesh.positions,
-        normal: normals(mesh.cells, mesh.positions),
-        offset: {
-          buffer: regl.buffer(
-            Array(N * N)
-              .fill()
-              .map((_, i) => {
-                var hi = (N * N) / 2;
-                var ni = i - hi;
-                var x = (-1 + (2 * Math.floor(i / N)) / N) * 150;
-                var z = (-1 + (2 * (i % N)) / N) * 150;
-                // return [x, ni * 0, z];
-                return [0, ni * 0, 0];
-              })
-          ),
-          divisor: 1
+        uniforms: {
+          index: index,
+          model: function(context, props) {
+            var rmat = [];
+            var rmati = mat4.identity(rmat);
+            var theta = context.time * 0.0;
+            mat4.rotateY(rmati, rmati, theta);
+            return rmat;
+          },
+          t: ({ time }) => time,
+          projection: ({ viewportWidth, viewportHeight }) =>
+            mat4.perspective(
+              [],
+              Math.PI / 4,
+              viewportWidth / viewportHeight,
+              0.01,
+              1000
+            ),
+          resolution: ({ viewportWidth, viewportHeight }) => [
+            viewportWidth,
+            viewportHeight
+          ],
+          "lights[0].color": [1, 0.4, 0.4],
+          "lights[1].color": [0.4, 1, 0.4],
+          "lights[2].color": [0.4, 0.4, 1],
+          "lights[3].color": [1, 1, 0.4],
+          "lights[0].position": ({ tick }) => {
+            const t = lightSpeed * tick;
+            // console.log(camera);
+            // debugger;
+            return [
+              40 * Math.cos(0.09 * t),
+              40 * Math.sin(0.09 * (2 * t)),
+              40 * Math.cos(0.09 * (3 * t))
+            ];
+          },
+          "lights[1].position": ({ tick }) => {
+            const t = lightSpeed * tick;
+            return [
+              40 * Math.cos(0.05 * (5 * t + 1)),
+              40 * Math.sin(0.05 * (4 * t)),
+              40 * Math.cos(0.05 * (0.1 * t))
+            ];
+          },
+          "lights[2].position": ({ tick }) => {
+            const t = lightSpeed * tick;
+            return [
+              40 * Math.cos(0.05 * (9 * t)),
+              40 * Math.sin(0.05 * (0.25 * t)),
+              40 * Math.cos(0.05 * (4 * t))
+            ];
+          },
+          "lights[3].position": ({ tick }) => {
+            const t = lightSpeed * tick;
+            return [
+              40 * Math.cos(0.1 * (0.3 * t)),
+              40 * Math.sin(0.1 * (2.1 * t)),
+              40 * Math.cos(0.1 * (1.3 * t))
+            ];
+          }
         },
-        color: {
-          buffer: regl.buffer(
-            Array(N * N)
-              .fill()
-              .map((_, i) => {
-                var x = Math.floor(i / N) / (N - 1);
-                var z = (i % N) / (N - 1);
-                return [Math.random(), Math.random(), Math.random()];
-              })
-          ),
-          divisor: 1
-        },
-        angle: {
-          buffer: angleBuffer,
-          divisor: 1
-        }
-      },
-      elements: mesh.cells,
-      instances: N * N,
-
-      uniforms: {
-        model: function(context, props) {
-          var rmat = [];
-          var rmati = mat4.identity(rmat);
-          var theta = context.time * 0.0;
-          mat4.rotateY(rmati, rmati, theta);
-          return rmat;
-        },
-        t: ({ time }) => time,
-        projection: ({ viewportWidth, viewportHeight }) =>
-          mat4.perspective(
-            [],
-            Math.PI / 4,
-            viewportWidth / viewportHeight,
-            0.01,
-            1000
-          ),
-        resolution: ({ viewportWidth, viewportHeight }) => [
-          viewportWidth,
-          viewportHeight
-        ],
-        "lights[0].color": [1, 0.4, 0.4],
-        "lights[1].color": [0.4, 1, 0.4],
-        "lights[2].color": [0.4, 0.4, 1],
-        "lights[3].color": [1, 1, 0.4],
-        "lights[0].position": ({ tick }) => {
-          const t = lightSpeed * tick;
-          // console.log(camera);
-          // debugger;
-          return [
-            40 * Math.cos(0.09 * t),
-            40 * Math.sin(0.09 * (2 * t)),
-            40 * Math.cos(0.09 * (3 * t))
-          ];
-        },
-        "lights[1].position": ({ tick }) => {
-          const t = lightSpeed * tick;
-          return [
-            40 * Math.cos(0.05 * (5 * t + 1)),
-            40 * Math.sin(0.05 * (4 * t)),
-            40 * Math.cos(0.05 * (0.1 * t))
-          ];
-        },
-        "lights[2].position": ({ tick }) => {
-          const t = lightSpeed * tick;
-          return [
-            40 * Math.cos(0.05 * (9 * t)),
-            40 * Math.sin(0.05 * (0.25 * t)),
-            40 * Math.cos(0.05 * (4 * t))
-          ];
-        },
-        "lights[3].position": ({ tick }) => {
-          const t = lightSpeed * tick;
-          return [
-            40 * Math.cos(0.1 * (0.3 * t)),
-            40 * Math.sin(0.1 * (2.1 * t)),
-            40 * Math.cos(0.1 * (1.3 * t))
-          ];
-        }
-      },
-      framebuffer: fbo,
-      primitive: "triangles"
-    });
+        framebuffer: fbo,
+        primitive: "triangles"
+      });
+    };
+    var drawClay = drawMesh(mesh2, 0);
+    var drawClay2 = drawMesh(mesh1, 1);
+    var drawClay3 = drawMesh(mesh2, 2);
+    var drawClay4 = drawMesh(mesh1, 3);
     // console.log(shaders);
     // debugger;
     const drawFboBlurred = regl({
@@ -229,7 +234,7 @@ require("resl")({
 
       // rotate the bunnies every frame.
       for (var i = 0; i < N * N; i++) {
-        angle[i] += 0.01;
+        angle[i] += 0.1;
       }
       angleBuffer.subdata(angle);
       // regl.clear({
@@ -246,6 +251,9 @@ require("resl")({
             depth: 1
           });
           drawClay();
+          drawClay2();
+          drawClay3();
+          drawClay4();
         });
         drawFboBlurred();
       });

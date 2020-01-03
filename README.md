@@ -1,2 +1,5 @@
 # clay-scans
-photogrammetry experiments 
+
+photogrammetry experiments
+
+![screenshot](2020.png)
